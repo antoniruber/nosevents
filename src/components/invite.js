@@ -26,40 +26,46 @@ const styles = {
   }
 };
 
-const scriptHash = "b9d6e6c6f005f0b89e53e7422cf2be22bcee0122"
+//const scriptHash = "b9d6e6c6f005f0b89e53e7422cf2be22bcee0122"
+const scriptHash = "8e5f3b4418f7989b3fe526ad11002ebb258b7f37"
 const known_integer_keys = []
 
 
 class Vote extends React.Component {
 
   async componentDidMount() {
+    var wallet_address = await this.props.nos.getAddress()
     var addr_string = await this.get_address_string()
     var my_invites = await this.get_my_invites(addr_string)
     var list = []
-    for (var i=0; i<my_invites.length; i++) {
-        var invite = await this.get_event(my_invites[i])
+    console.log("INVITES LENGTH = " + my_invites.length)
+    for (var j=0; j<my_invites.length; j++) {
+        console.log("ID == " + my_invites[j])
+        var invite = await this.get_event(my_invites[j])
         var invited = []
         var accepted = []
         var declined = []
-        for (var [k,v] of invite.get("guests")) {
-            console.log(k + " ==== " + v)
-            if (v == "invited") {
-                invited.push(k)
+        var guests = invite.get("guests")
+        console.log("GUESTS LENGTH = " + guests.length)
+        for (var i=0; i<guests.length; i++) {
+            if (guests[i][1] == "invited") {
+                invited.push(guests[i][0])
             }
-            else if (v == "accepted") {
-                accepted.push(k)
+            else if (guests[i][1] == "accepted") {
+                accepted.push(guests[i][0])
             }
             else {
-                declined.push(k)
+                declined.push(guests[i][0])
             }
         }
-        // TODO add location in smart contract
-        list.push({"id": my_invites[i], "subject": invite.get("text"), "date": invite.get("date"), "from": invite.get("owner"), "location": invite.get("location"), "acceptUsers": accepted, "rejectUsers": declined, "to": invited})
+        console.log("BEFORE PUSH")
+        list.push({"id": my_invites[j], "subject": invite.get("text"), "date": invite.get("date"), "from": invite.get("owner"), "location": invite.get("location"), "acceptUsers": accepted, "rejectUsers": declined, "to": invited})
+        console.log("AFTER PUSH")
     }
 
     this.setState({
         eventList: list,
-        currentUser: addr_string
+        currentUser: wallet_address
     });
 
     console.log(JSON.stringify(list, null, 4));
@@ -71,112 +77,8 @@ class Vote extends React.Component {
       currentUser: "",
       inputValue: "",
       eventList: [
-//      {
-//        subject: "When Binance 111?",
-//        date: "29/07/2018",
-//        acceptUsers: ["Bob", "Michal", "Geoff", "Kelvin"],
-//        rejectUsers: ["Qiangji", "alan"],
-//        from: "Geoff",
-//        to: [
-//          "user1",
-//          "Bob",
-//          "Michal",
-//          "Geoff",
-//          "Kelvin",
-//          "Wendy",
-//          "miaomiao"
-//        ],
-//        location: "3 Blawayn roda, Mongolisa, 3425"
-//      },
-//      {
-//        subject: "When Binance 222 ?",
-//        date: "30/07/2018",
-//        acceptUsers: [],
-//        rejectUsers: ["Qiangji", "alan", "Geoff"],
-//        from: "user1",
-//        to: [
-//          "user1",
-//          "Bob",
-//          "Michal",
-//          "Geoff",
-//          "Kelvin",
-//          "Wendy",
-//          "miaomiao"
-//        ],
-//        location: "3 Blawayn roda, Mongolisa, 3425"
-//      },
-//      {
-//        subject: "When Binance 333 ?",
-//        date: "31/07/2018",
-//        acceptUsers: ["Bob", "Geoff", "Kelvin"],
-//        rejectUsers: ["Qiangji"],
-//        from: "geoff",
-//        to: [
-//          "user1",
-//          "Bob",
-//          "Michal",
-//          "Geoff",
-//          "Kelvin",
-//          "Wendy",
-//          "miaomiao"
-//        ],
-//        location: "3 Blawayn roda, Mongolisa, 3425"
-//      },
-//      {
-//        subject: "When Binance 444 ?",
-//        date: "13/07/2018",
-//        acceptUsers: ["Bob", "Kelvin"],
-//        rejectUsers: ["Qiangji", "Geoff"],
-//        from: "user1",
-//        to: [
-//          "user1",
-//          "Bob",
-//          "Michal",
-//          "Geoff",
-//          "Kelvin",
-//          "Wendy",
-//          "miaomiao"
-//        ],
-//        location: "3 Blawayn roda, Mongolisa, 3425"
-//      },
-//      {
-//        subject: "When Binance 5555 ?",
-//        date: "14/07/2018",
-//        acceptUsers: ["Bob"],
-//        rejectUsers: [],
-//        from: "user1",
-//        to: [
-//          "user1",
-//          "Bob",
-//          "Michal",
-//          "Geoff",
-//          "Kelvin",
-//          "Wendy",
-//          "miaomiao"
-//        ],
-//        location: "3 Blawayn roda, Mongolisa, 3425"
-//      },
-//      {
-//        subject: "When Binance 6666?",
-//        date: "15/07/2018",
-//        acceptUsers: ["Kelvin"],
-//        rejectUsers: ["Qiangji"],
-//        from: "user1",
-//        to: [
-//          "user1",
-//          "Bob",
-//          "Michal",
-//          "Geoff",
-//          "Kelvin",
-//          "Wendy",
-//          "miaomiao"
-//        ],
-//        location: "3 Blawayn roda, Mongolisa, 3425"
-//      }
       ]
     };
-    // console.log("hahahah");
-    // console.log(this.state.eventList.filter(e => e.from == "user1").length);
   }
 
     randomize() {
@@ -307,7 +209,12 @@ class Vote extends React.Component {
     convert_type(v) {
         var value;
         if (v.type == "ByteArray") {
-            value = u.hexstring2str(v.value)
+            if (wallet.isScriptHash(v.value)) {
+                value = wallet.getAddressFromScriptHash(u.reverseHex(v.value))
+            }
+            else {
+                value = u.hexstring2str(v.value)
+            }
         }
         if (v.type == "Integer") {
             value = parseInt(u.reverseHex(v.value), 16)
@@ -329,12 +236,20 @@ class Vote extends React.Component {
     // ===============================================
 
     async get_event(eventId) {
-        var q = await this.handleMap(this.handleStorage(eventId, true, false))
+        var q = await this.handleArray(this.handleStorage(eventId, true, false))
+
+        var map = new Map()
+        map.set("id", q[0])
+        map.set("owner", q[1])
+        map.set("text", q[2])
+        map.set("date", q[3])
+        map.set("location", q[4])
+        map.set("guests", q[5])
         // DEBUG
-        for (var [key, value] of q) {
+        for (var [key, value] of map) {
           console.log(key + ' = ' + value);
         }
-        return q
+        return map
     }
 
     async accept(inviteId) {
@@ -386,7 +301,6 @@ class Vote extends React.Component {
     }  
 
     async get_address_string() {
-        
         var address = await this.props.nos.getAddress()
         console.log(address)
         var encoded_address = u.reverseHex(wallet.getScriptHashFromAddress(address))
@@ -397,9 +311,8 @@ class Vote extends React.Component {
     }
 
     async get_my_invites(wallet_id) {
-        console.log("AAAAAAAAAAAAAA")
-        var q = await this.handleArray(this.handleStorage(wallet_id, true, false))
-        console.log("BBBBBBBBBBBBB")
+        var q = await this.handleArray(await this.handleStorage(wallet_id, true, false))
+        console.log("========= GETTING MY INVITES ========")
         console.log(q)
         // DEBUG
       //for (var [key, value] of q) {
@@ -483,7 +396,7 @@ class Vote extends React.Component {
                         >
                           <div className="item-text">
                             <i className="fa fa-calendar" aria-hidden="true" />
-                            <h5>Recived</h5>
+                            <h5>Received</h5>
                           </div>
                         </td>
                         <td className="item" data-tab-name="inviteSend">
@@ -516,7 +429,7 @@ class Vote extends React.Component {
                         </tr>
                       </thead>
                       <tbody>
-                        {/* geoff is currentUser */}
+                        {/* debug is currentUser */}
                         {this.state.eventList
                           .filter(e => e.from != this.state.currentUser)
                           .map((item, index) => {
@@ -645,6 +558,20 @@ class Vote extends React.Component {
                                       </button>
                                     );
                                   })}
+                                  {item.acceptUsers.map((v, i) => {
+                                    return (
+                                      <button className="btn btn-default btn-on active">
+                                        {v}
+                                      </button>
+                                    );
+                                  })}
+                                  {item.rejectUsers.map((v, i) => {
+                                    return (
+                                      <button className="btn btn-default btn-off">
+                                        {v}
+                                      </button>
+                                    );
+                                  })}
                                 </td>
                               </tr>
                             );
@@ -737,7 +664,7 @@ class Vote extends React.Component {
                             data-tab-name="inviteSend"
                             onClick={this.handleCreate}
                           >
-                            send message
+                            send invite
                           </button>
                         </div>
                       </div>
